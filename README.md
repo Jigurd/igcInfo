@@ -6,6 +6,8 @@ Due to a gross miscalculation in the amount of work
 this assignment would be and similar mismanagement of
 my time, at the time of writing most of the code 
 is non-functional. The uptime ping works. That's about it.
+I couldn't even figure out how to deploy the thing to Heroku.
 
-I would very much appreciate an extension to fix it 
-but that will of course be up to you.
+I would very much appreciate an extension to fix this mess.
+Whetheer you grant me that or not, I promise not to let this
+happen again.
