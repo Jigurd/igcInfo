@@ -8,5 +8,4 @@ my time, at the time of writing most of the code
 is non-functional. The uptime ping works. That's about it.
 
 I would very much appreciate an extension to fix it 
-(I'll try to fix as much as possible before I go to bed) 
 but that will of course be up to you.
