@@ -96,48 +96,54 @@ func handlerIGC(w http.ResponseWriter, r *http.Request) {
     } else if (r.Method=="GET"){
         parts :=strings.Split(r.URL.Path, "/")
 
-        if len(parts)>4 { //Check whether a specific id is being requested
+        if len(parts)>=4 { //Check whether a specific id is being requested
             requestedID, err := strconv.Atoi(parts[4])
-            track := tracks[requestedID]
 
-            if err != nil {
-                //the track does not exist
-                http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-                json.NewEncoder(w).Encode(requestedID)
-                //fmt.Fprintf(w, "This is the first NotFound block\n")
-            }
-            if requestedID <= LastID {
-                if len(parts) == 6 {
-                    http.Header.Add(w.Header(), "content-type", "application/json")
-                    requestedTrack := Track{
-                        track.Hdate,
-                        track.Pilot,
-                        track.Glider,
-                        track.GliderID,
-                        track.TrackLength,
-                    }
-                    json.NewEncoder(w).Encode(requestedTrack)
-                } else if len(parts) == 7 {
-                    switch parts[5] {
-                    case "pilot":
-                        fmt.Fprintf(w, track.Pilot)
-                    case "glider":
-                        fmt.Fprintf(w, track.Glider)
-                    case "glider_id":
-                        fmt.Fprintf(w, track.GliderID)
-                    case "track_length":
-                        fmt.Fprintf(w, "%f", track.TrackLength)
-                    case "H_date":
-                        fmt.Fprintf(w, "%v", track.Hdate)
-                    default:
-                        http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-                        //fmt.Fprintf(w, "This is the second NotFound block\n")
-                    }
+            if requestedID < LastID { //make sure requestedID is not out of bounds
+                track := tracks[requestedID]
 
+                if err != nil {
+                    //the track does not exist
+                    http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+                    json.NewEncoder(w).Encode(requestedID)
+                    //fmt.Fprintf(w, "This is the first NotFound block\n")
                 }
-            }else {
+
+                if requestedID <= LastID {
+                    if len(parts) == 5 {
+                        http.Header.Add(w.Header(), "content-type", "application/json")
+                        requestedTrack := Track{
+                            track.Hdate,
+                            track.Pilot,
+                            track.Glider,
+                            track.GliderID,
+                            track.TrackLength,
+                        }
+                        json.NewEncoder(w).Encode(requestedTrack)
+                    } else if len(parts) == 6 {
+                        switch strings.ToLower(parts[5]) {
+                        case "pilot":
+                            fmt.Fprintf(w, track.Pilot)
+                        case "glider":
+                            fmt.Fprintf(w, track.Glider)
+                        case "glider_id":
+                            fmt.Fprintf(w, track.GliderID)
+                        case "track_length":
+                            fmt.Fprintf(w, "%f", track.TrackLength)
+                        case "h_date":
+                            fmt.Fprintf(w, "%v", track.Hdate)
+                        default:
+                            http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+                            //fmt.Fprintf(w, "This is the second NotFound block\n")
+                        }
+
+                    }
+                } else {
+                    http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+                    //fmt.Fprintf(w, "This is the third NotFound block\n")
+                }
+            }else{ //id is out of bounds, does not exist
                 http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-                //fmt.Fprintf(w, "This is the third NotFound block\n")
                 }
         }else{
             //return array of all ids
