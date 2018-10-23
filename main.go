@@ -7,6 +7,7 @@ import (
     "log"
     "net/http"
     "regexp"
+    "strconv"
     "strings"
     "time"
 )
@@ -45,7 +46,7 @@ var start = time.Now() //keeps track of uptime
 var LastID int
 
 //arrays
-var tracks map[string]igc.Track = make(map[string]igc.Track)
+var tracks = []Track{}//make(map[string]Track)
 var ids IDArray
 
 // HANDLERS
@@ -74,59 +75,70 @@ func handlerIGC(w http.ResponseWriter, r *http.Request) {
         decoder := json.NewDecoder(r.Body)
         decoder.Decode(&urlRequest)
 
-        var track igc.Track
-        var err error
-        track, err = igc.ParseLocation(urlRequest.URL)
+
+
+        track, err := igc.ParseLocation(urlRequest.URL)
         if err == nil{
             id := fmt.Sprintf("track id: %d", LastID)
+            ids.Ids = append(ids.Ids, id)
             LastID++
-            tracks[id] = track
+
+            encode := Track{track.Date, track.Pilot, track.GliderType, track.GliderID, "0",}
+            encode.TrackLength = totalDistance(track)
+
+            tracks = append(tracks, encode)
             json.NewEncoder(w).Encode(id)
 
         } else {
             http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+            fmt.Sprintf("%f", track)
         }
     } else if (r.Method=="GET"){
         parts :=strings.Split(r.URL.Path, "/")
 
         if len(parts)>4 { //Check whether a specific id is being requested
-            requestedID := parts[4]
-            track, exists := tracks[requestedID]
-            if !exists {
-                //this track does not exist
+            requestedID, err := strconv.Atoi(parts[4])
+            track := tracks[requestedID]
+
+            if err != nil {
+                //the track does not exist
                 http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+                json.NewEncoder(w).Encode(requestedID)
+                //fmt.Fprintf(w, "This is the first NotFound block\n")
             }
-            if requestedID >= string(LastID) && isNumeric(requestedID) {
+            if requestedID <= LastID {
                 if len(parts) == 6 {
                     http.Header.Add(w.Header(), "content-type", "application/json")
                     requestedTrack := Track{
-                        track.Header.Date,
-                        track.Header.Pilot,
-                        track.Header.GliderType,
-                        track.Header.GliderID,
-                        totalDistance(track),
+                        track.Hdate,
+                        track.Pilot,
+                        track.Glider,
+                        track.GliderID,
+                        track.TrackLength,
                     }
                     json.NewEncoder(w).Encode(requestedTrack)
                 } else if len(parts) == 7 {
                     switch parts[5] {
                     case "pilot":
-                        fmt.Fprintf(w, track.Header.Pilot)
+                        fmt.Fprintf(w, track.Pilot)
                     case "glider":
-                        fmt.Fprintf(w, track.Header.GliderType)
+                        fmt.Fprintf(w, track.Glider)
                     case "glider_id":
-                        fmt.Fprintf(w, track.Header.GliderID)
+                        fmt.Fprintf(w, track.GliderID)
                     case "track_length":
-                        fmt.Fprintf(w, "%f", track.Task.Distance())
+                        fmt.Fprintf(w, "%f", track.TrackLength)
                     case "H_date":
-                        fmt.Fprintf(w, "%v", track.Header.Date)
+                        fmt.Fprintf(w, "%v", track.Hdate)
                     default:
                         http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-                }
+                        //fmt.Fprintf(w, "This is the second NotFound block\n")
+                    }
 
-            } else {
+                }
+            }else {
                 http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-            }
-        }
+                //fmt.Fprintf(w, "This is the third NotFound block\n")
+                }
         }else{
             //return array of all ids
             http.Header.Add(w.Header(), "content-type", "application/json")
